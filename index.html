@@ -523,7 +523,7 @@
             });
 
             // Add the final textual comments field at the bottom baseline
-            html += `
+           html += `
                 <div style="background: #1e295d; color: white; padding: 12px 20px; border-radius: 6px; font-weight: 700; margin-top: 35px; margin-bottom: 20px; font-size: 16px; letter-spacing: 0.5px;">
                     PART III: QUALITATIVE ASSESSMENT
                 </div>
@@ -535,6 +535,9 @@
                 </form>
             `;
             container.innerHTML = html;
+            
+            // ADD this simple line right here to engage the navigation trackers:
+            resetNavigationTrackers(); 
         }
 
         function cancelEvaluation() {
@@ -643,6 +646,99 @@
         function logout() {
             sessionStorage.clear();
             window.location.href = '/';
+        }
+        // ==========================================
+        // KEYBOARD NAVIGATION ENGINE MODULE (UX)
+        // ==========================================
+        let activeQuestionIndex = 0;
+        let visibleQuestionCards = [];
+
+        // Watch for keystrokes whenever the user is interacting with the page
+        document.addEventListener('keydown', (e) => {
+            // Only activate shortcuts if an evaluation form is currently open on screen
+            const form = document.getElementById('evaluationSubmissionForm');
+            if (!form) return;
+
+            // Gather all question cards currently rendered in the form layout
+            visibleQuestionCards = Array.from(form.querySelectorAll('.question-card'));
+            if (visibleQuestionCards.length === 0) return;
+
+            // Skip shortcut overrides if the student is typing inside the comment textarea box
+            if (document.activeElement && document.activeElement.id === 'evalComment') return;
+
+            // Handle Navigation Commands: ArrowUp or ArrowDown
+            if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+                e.preventDefault(); // Stop standard browser page jitter scrolling
+
+                // Clear styling from old highlighted card
+                if (visibleQuestionCards[activeQuestionIndex]) {
+                    visibleQuestionCards[activeQuestionIndex].style.borderLeft = 'none';
+                    visibleQuestionCards[activeQuestionIndex].style.background = 'white';
+                }
+
+                if (e.key === 'ArrowDown') {
+                    // Move down, but don't go past the last item (Qualitative block)
+                    if (activeQuestionIndex < visibleQuestionCards.length - 1) activeQuestionIndex++;
+                } else if (e.key === 'ArrowUp') {
+                    // Move up, but don't go past the first question card
+                    if (activeQuestionIndex > 0) activeQuestionIndex--;
+                }
+
+                // Highlight the newly selected active card box with a clean Navy guide track
+                const targetCard = visibleQuestionCards[activeQuestionIndex];
+                targetCard.style.borderLeft = '6px solid #1e295d';
+                targetCard.style.background = '#fcfdfe';
+                
+                // Smoothly focus the screen context onto the selected item tracker
+                targetCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+
+            // Handle Selection Commands: ArrowLeft or ArrowRight (Selecting Scores 1 to 5)
+            if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
+                const targetCard = visibleQuestionCards[activeQuestionIndex];
+                if (!targetCard) return;
+
+                // Find all the radio buttons (5, 4, 3, 2, 1) inside this single highlighted card block
+                const radios = Array.from(targetCard.querySelectorAll('input[type="radio"]'));
+                if (radios.length === 0) return; // Skip if it's the text comment area block
+
+                // Map order: radios are ordered index 0=Score 5 down to index 4=Score 1
+                let currentCheckedIndex = radios.findIndex(r => r.checked);
+
+                e.preventDefault(); // Lock screen scrolling stability
+
+                if (currentCheckedIndex === -1) {
+                    // Default baseline starting choice: Select 5 if nothing is checked yet
+                    radios[0].checked = true;
+                } else {
+                    if (e.key === 'ArrowLeft') {
+                        // Moving left means reducing score (moving towards 1, which is a higher array index)
+                        if (currentCheckedIndex < radios.length - 1) {
+                            radios[currentCheckedIndex + 1].checked = true;
+                        }
+                    } else if (e.key === 'ArrowRight') {
+                        // Moving right means increasing score (moving towards 5, which is index 0)
+                        if (currentCheckedIndex > 0) {
+                            radios[currentCheckedIndex - 1].checked = true;
+                        }
+                    }
+                }
+            }
+        });
+
+        // Simple helper routine to reset index metrics whenever a brand new form block loads up
+        function resetNavigationTrackers() {
+            activeQuestionIndex = 0;
+            setTimeout(() => {
+                const form = document.getElementById('evaluationSubmissionForm');
+                if(form) {
+                    const cards = form.querySelectorAll('.question-card');
+                    if(cards[0]) {
+                        cards[0].style.borderLeft = '6px solid #1e295d';
+                        cards[0].style.background = '#fcfdfe';
+                    }
+                }
+            }, 200);
         }
     </script>
 </body>
