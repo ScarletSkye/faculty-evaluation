@@ -58,10 +58,12 @@ db.serialize(() => {
 
     db.run(`CREATE TABLE evaluation_answers (
         answer_id INTEGER PRIMARY KEY AUTOINCREMENT,
+        student_id INTEGER,
         assignment_id INTEGER,
         question_id INTEGER,
         rating INTEGER,
         comment TEXT,
+        FOREIGN KEY(student_id) REFERENCES users(user_id),
         FOREIGN KEY(assignment_id) REFERENCES class_assignments(assignment_id),
         FOREIGN KEY(question_id) REFERENCES evaluation_questions(question_id)
     )`);
@@ -246,30 +248,39 @@ app.get('/api/student/:studentId/evaluations', (req, res) => {
 });
 
 app.post('/api/student/submit-evaluation', (req, res) => {
-    const { student_id, assignment_id, ratings, comments } = req.body;
+    const { student_id, assignment_id, ratings, comments, comment } = req.body;
+    const studentId = parseInt(student_id, 10);
+    const assignmentId = parseInt(assignment_id, 10);
+    const finalComment = comments ?? comment ?? "";
     
-    db.run(`DELETE FROM evaluation_answers WHERE assignment_id = ?`, [assignment_id], (err) => {
+    if (!studentId || !assignmentId || !Array.isArray(ratings) || ratings.length === 0) {
+        return res.status(400).json({ message: "Incomplete evaluation payload." });
+    }
+
+    db.run(`DELETE FROM evaluation_answers WHERE student_id = ? AND assignment_id = ?`, [studentId, assignmentId], (err) => {
         if (err) return res.status(500).json({ error: err.message });
 
-        const stmt = db.prepare(`INSERT INTO evaluation_answers (assignment_id, question_id, rating, comment) VALUES (?, ?, ?, ?)`);
+        const stmt = db.prepare(`INSERT INTO evaluation_answers (student_id, assignment_id, question_id, rating, comment) VALUES (?, ?, ?, ?, ?)`);
         ratings.forEach((item, index) => {
-            const textComment = (index === 0) ? (comments || "") : "";
-            stmt.run(assignment_id, item.question_id, item.rating, textComment);
+            const textComment = (index === 0) ? finalComment : "";
+            stmt.run(studentId, assignmentId, item.question_id, item.rating, textComment);
         });
-        stmt.finalize();
-
-        db.run(`INSERT INTO evaluation_tracker (student_id, assignment_id, is_completed) 
-                VALUES (?, ?, 1) 
-                ON CONFLICT(student_id, assignment_id) DO UPDATE SET is_completed = 1`, 
-        [student_id, assignment_id], (err) => {
+        stmt.finalize((err) => {
             if (err) return res.status(500).json({ error: err.message });
-            res.json({ message: "Evaluation submitted securely!" });
+
+            db.run(`INSERT INTO evaluation_tracker (student_id, assignment_id, is_completed) 
+                    VALUES (?, ?, 1) 
+                    ON CONFLICT(student_id, assignment_id) DO UPDATE SET is_completed = 1`, 
+            [studentId, assignmentId], (err) => {
+                if (err) return res.status(500).json({ error: err.message });
+                res.json({ success: true, message: "Evaluation submitted securely!" });
+            });
         });
     });
 });
 
 app.get('/api/faculty/:facultyId/performance', (req, res) => {
-    db.all(`SELECT c.course_code, c.course_title, AVG(ea.rating) AS average_score, COUNT(ea.answer_id) as total_ratings_received
+    db.all(`SELECT c.course_code, c.course_title, AVG(ea.rating) AS average_score, COUNT(DISTINCT ea.student_id) as total_ratings_received
         FROM class_assignments ca 
         JOIN courses c ON ca.course_id = c.course_id 
         LEFT JOIN evaluation_answers ea ON ca.assignment_id = ea.assignment_id
@@ -295,6 +306,90 @@ app.get('/api/admin/overall-stats', (req, res) => {
         if (err) return res.status(500).json({ error: err.message });
         const rate = row.total > 0 ? (row.completed / row.total) * 100 : 0;
         res.json({ total_assigned: row.total, total_completed: row.completed, completion_rate: rate.toFixed(2) + "%" });
+    });
+});
+
+app.get('/api/admin/professors', (req, res) => {
+    db.all(`SELECT user_id, school_id, first_name || ' ' || last_name AS professor_name
+        FROM users
+        WHERE role = 'faculty'
+        ORDER BY last_name, first_name`, [], (err, rows) => {
+        if (err) return res.status(500).json({ error: err.message });
+        res.json(rows);
+    });
+});
+
+app.get('/api/admin/professors/:facultyId/statistics', (req, res) => {
+    const facultyId = req.params.facultyId;
+    const sql = `
+        SELECT
+            u.user_id,
+            u.school_id,
+            u.first_name || ' ' || u.last_name AS professor_name,
+            (SELECT COUNT(*) FROM class_assignments ca WHERE ca.faculty_id = u.user_id) AS total_classes,
+            (SELECT COUNT(*) FROM evaluation_tracker et
+                JOIN class_assignments ca ON ca.assignment_id = et.assignment_id
+                WHERE ca.faculty_id = u.user_id) AS assigned_students,
+            (SELECT COUNT(*) FROM evaluation_tracker et
+                JOIN class_assignments ca ON ca.assignment_id = et.assignment_id
+                WHERE ca.faculty_id = u.user_id AND et.is_completed = 1) AS completed_evaluations,
+            (SELECT AVG(ea.rating) FROM evaluation_answers ea
+                JOIN class_assignments ca ON ca.assignment_id = ea.assignment_id
+                WHERE ca.faculty_id = u.user_id) AS average_rating,
+            (SELECT COUNT(*) FROM evaluation_answers ea
+                JOIN class_assignments ca ON ca.assignment_id = ea.assignment_id
+                WHERE ca.faculty_id = u.user_id) AS total_rating_answers
+        FROM users u
+        WHERE u.user_id = ? AND u.role = 'faculty'
+    `;
+
+    db.get(sql, [facultyId], (err, summary) => {
+        if (err) return res.status(500).json({ error: err.message });
+        if (!summary) return res.status(404).json({ message: "Professor not found." });
+
+        db.all(`SELECT ca.assignment_id, c.course_code, c.course_title,
+                (SELECT COUNT(*) FROM evaluation_tracker et WHERE et.assignment_id = ca.assignment_id) AS assigned_students,
+                (SELECT COUNT(*) FROM evaluation_tracker et WHERE et.assignment_id = ca.assignment_id AND et.is_completed = 1) AS completed_evaluations,
+                (SELECT AVG(ea.rating) FROM evaluation_answers ea WHERE ea.assignment_id = ca.assignment_id) AS average_rating
+            FROM class_assignments ca
+            JOIN courses c ON c.course_id = ca.course_id
+            WHERE ca.faculty_id = ?
+            ORDER BY c.course_code`, [facultyId], (err, courses) => {
+            if (err) return res.status(500).json({ error: err.message });
+
+            db.all(`SELECT q.category, AVG(ea.rating) AS average_rating, COUNT(ea.answer_id) AS total_answers
+                FROM evaluation_answers ea
+                JOIN evaluation_questions q ON q.question_id = ea.question_id
+                JOIN class_assignments ca ON ca.assignment_id = ea.assignment_id
+                WHERE ca.faculty_id = ?
+                GROUP BY q.category
+                ORDER BY q.category`, [facultyId], (err, categories) => {
+                if (err) return res.status(500).json({ error: err.message });
+
+                db.all(`SELECT ea.comment, c.course_code
+                    FROM evaluation_answers ea
+                    JOIN class_assignments ca ON ea.assignment_id = ca.assignment_id
+                    JOIN courses c ON ca.course_id = c.course_id
+                    WHERE ca.faculty_id = ? AND ea.comment IS NOT NULL AND ea.comment != ''
+                    ORDER BY ea.answer_id DESC`, [facultyId], (err, comments) => {
+                    if (err) return res.status(500).json({ error: err.message });
+
+                    const assigned = summary.assigned_students || 0;
+                    const completed = summary.completed_evaluations || 0;
+                    const completionRate = assigned > 0 ? ((completed / assigned) * 100).toFixed(2) + "%" : "0.00%";
+
+                    res.json({
+                        summary: {
+                            ...summary,
+                            completion_rate: completionRate
+                        },
+                        courses,
+                        categories,
+                        comments
+                    });
+                });
+            });
+        });
     });
 });
 

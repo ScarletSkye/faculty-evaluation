@@ -87,6 +87,28 @@
             border-color: #1e295d;
         }
 
+        .demo-login-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+            margin-top: 14px;
+        }
+
+        .demo-login-grid button {
+            border: 1px solid #d8dbe8;
+            background: #f8f9fc;
+            color: #1e295d;
+            border-radius: 6px;
+            padding: 9px 8px;
+            font-size: 12px;
+            font-weight: 700;
+            cursor: pointer;
+        }
+
+        .demo-login-grid button:hover {
+            background: #edf1ff;
+        }
+
         .btn-signin, .btn-submit, .btn-logout {
             width: 100%;
             padding: 14px;
@@ -139,7 +161,7 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            border-bottom: 4px solid gold; /* OLOPSC Pride color accentuation option */
+            border-bottom: 4px solid gold;
         }
 
         .dash-body {
@@ -196,6 +218,7 @@
             margin-bottom: 15px;
             border-radius: 8px;
             box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+            transition: border 0.3s ease;
         }
         .rating-container {
             display: flex;
@@ -207,6 +230,7 @@
             align-items: center;
             gap: 5px;
             font-weight: 600;
+            cursor: pointer;
         }
 
         .stat-grid {
@@ -224,6 +248,74 @@
         }
         .stat-card h3 { font-size: 28px; color: #1e295d; margin-top: 5px; }
 
+        .admin-panel {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+            margin-top: 22px;
+        }
+
+        .admin-toolbar {
+            display: grid;
+            grid-template-columns: minmax(220px, 1fr) auto;
+            gap: 14px;
+            align-items: end;
+        }
+
+        .admin-toolbar select {
+            width: 100%;
+            padding: 12px 14px;
+            border: 1px solid #cfd5e2;
+            border-radius: 6px;
+            font-size: 15px;
+            background: #fff;
+            color: #1f2937;
+        }
+
+        .mini-stat-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+            gap: 14px;
+            margin: 18px 0;
+        }
+
+        .mini-stat {
+            border: 1px solid #edf0f5;
+            border-radius: 8px;
+            padding: 14px;
+            background: #fbfcff;
+        }
+
+        .mini-stat p {
+            color: #657083;
+            font-size: 13px;
+            margin-bottom: 6px;
+        }
+
+        .mini-stat strong {
+            color: #1e295d;
+            font-size: 22px;
+        }
+
+        .admin-split {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 18px;
+            margin-top: 18px;
+        }
+
+        @media (max-width: 800px) {
+            .admin-toolbar,
+            .admin-split {
+                grid-template-columns: 1fr;
+            }
+
+            .demo-login-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
         .comment-item {
             background: white;
             padding: 15px;
@@ -231,6 +323,30 @@
             margin-bottom: 10px;
             border-left: 4px solid #1e295d;
             box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+        }
+
+        /* Custom Modern Toast Notification Box */
+        .custom-toast {
+            position: fixed;
+            top: 25px;
+            right: 25px;
+            background: #10b981;
+            color: white;
+            padding: 16px 28px;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 16px;
+            box-shadow: 0 10px 25px rgba(16, 185, 129, 0.3);
+            z-index: 9999;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            animation: slideInToast 0.3s ease forwards;
+        }
+
+        @keyframes slideInToast {
+            from { transform: translateX(120%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
         }
     </style>
 </head>
@@ -259,6 +375,12 @@
             <button type="submit" class="btn-signin">Sign in</button>
         </form>
 
+        <div class="demo-login-grid">
+            <button type="button" onclick="fillDummyLogin('24a-0146')">Student Demo</button>
+            <button type="button" onclick="fillDummyLogin('PROF-01')">Faculty Demo</button>
+            <button type="button" onclick="fillDummyLogin('ADMIN-01')">Admin Demo</button>
+        </div>
+
         <div id="message-box"></div>
     </div>
 
@@ -282,8 +404,7 @@
                         <th>Action</th>
                     </tr>
                 </thead>
-                <tbody id="evaluationListBody">
-                    </tbody>
+                <tbody id="evaluationListBody"></tbody>
             </table>
         </div>
     </div>
@@ -303,7 +424,7 @@
                     <tr>
                         <th>Course Code</th>
                         <th>Course Description</th>
-                        <th>Responses Recieved</th>
+                        <th>Responses Received</th>
                         <th>Average Score (Out of 5.0)</th>
                     </tr>
                 </thead>
@@ -341,6 +462,20 @@
             <p style="background: #e8f0fe; padding: 15px; border-radius: 6px; color: #1e295d; font-weight: 500;">
                 💡 System Administration Warning: Seeding routines automatically reinitialize metrics back to default baseline assignments whenever the active backend process cycles or reboots.
             </p>
+            <div class="admin-panel">
+                <div class="admin-toolbar">
+                    <div>
+                        <label for="adminProfessorSelect" style="display:block; margin-bottom:8px; color:#1e295d; font-weight:700;">Select Professor</label>
+                        <select id="adminProfessorSelect" onchange="loadAdminProfessorStatistics(this.value)">
+                            <option value="">Loading professors...</option>
+                        </select>
+                    </div>
+                    <button class="btn-action" onclick="refreshSelectedProfessor()" style="height:43px;">Refresh</button>
+                </div>
+                <div id="adminProfessorContent" style="margin-top:18px;">
+                    <p style="color:#657083;">Choose a professor to view evaluation statistics, course results, category averages, and student comments.</p>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -349,7 +484,14 @@
         let activeAssignmentId = null;
         let evaluationQuestionsList = [];
 
-        // Handle active logging form submission
+        function fillDummyLogin(schoolId) {
+            document.getElementById('schoolId').value = schoolId;
+            document.getElementById('password').value = 'password123';
+            document.getElementById('message-box').style.color = '#1e295d';
+            document.getElementById('message-box').textContent = 'Demo password filled: password123';
+        }
+
+        // Handle login form execution
         document.getElementById('loginForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             
@@ -373,22 +515,20 @@
                     msgBox.style.color = 'green';
                     msgBox.textContent = 'Verification successful! Transitioning view contents...';
                     
-                    // Switch interface smoothly without reloading full window links
                     setTimeout(() => {
                         showCorrectDashboard(data.user);
                     }, 800);
                 }
             } catch (err) {
                 msgBox.style.color = 'red';
-                msgBox.textContent = 'Network error cleanly communicating with database runtime layer.';
+                msgBox.textContent = 'Network error communicating with server context.';
                 console.error(err);
             }
         });
 
         function showCorrectDashboard(user) {
-            // Hide the login container completely
             document.getElementById('loginView').style.display = 'none';
-            document.body.style.background = "#f4f6f9"; // Swap background into standard dashboard style
+            document.body.style.background = "#f4f6f9"; 
             document.body.style.display = "flex";
 
             if (user.role === 'student') {
@@ -404,15 +544,16 @@
             } else if (user.role === 'admin') {
                 document.getElementById('adminDashboard').style.display = 'flex';
                 loadAdminStatistics();
+                loadAdminProfessors();
             }
         }
 
-        // --- STUDENT LAYOUT ENGINE ---
+        // --- STUDENT ENGINE ROUTINES ---
         async function loadGlobalQuestions() {
             try {
                 const res = await fetch('/api/questions');
                 evaluationQuestionsList = await res.json();
-            } catch(e) { console.error("Error pulling grading matrix definitions", e); }
+            } catch(e) { console.error("Error loading questionnaire criteria structural assets", e); }
         }
 
         async function loadStudentEvaluations() {
@@ -421,6 +562,11 @@
                 const data = await res.json();
                 const tbody = document.getElementById('evaluationListBody');
                 tbody.innerHTML = '';
+                // Inside your loadStudentEvaluations loop:
+const statusText = assignment.is_completed ? '✅ Done' : 'Pending';
+const actionButton = assignment.is_completed 
+    ? `<button class="btn-action" disabled style="background: #10b981;">Completed</button>` 
+    : `<button class="btn-action" onclick="openEvaluationForm(${assignment.assignment_id}, ...)">Evaluate</button>`;
 
                 data.forEach(item => {
                     const row = document.createElement('tr');
@@ -434,7 +580,7 @@
                             </span>
                         </td>
                         <td>
-                            ${item.is_completed === 1 ? 'No Action' : `<button class="btn-action" onclick="openEvaluationForm(${item.assignment_id}, '${item.professor_name}', '${item.course_title}')">Evaluate</button>`}
+                            ${item.is_completed === 1 ? '<span style="color:#7f8c8d; font-size:13px; font-weight:500;">Submitted</span>' : `<button class="btn-action" onclick="openEvaluationForm(${item.assignment_id}, '${item.professor_name}', '${item.course_title}')">Evaluate</button>`}
                         </td>
                     `;
                     tbody.appendChild(row);
@@ -447,153 +593,317 @@
             const container = document.getElementById('studentMainContent');
             
             let html = `
-                <div style="margin-bottom: 20px;">
-                    <button class="btn-action" style="background:#7f8c8d; margin-bottom: 15px;" onclick="cancelEvaluation()">← Return to List</button>
-                    <h2>Evaluating: Prof. ${profName}</h2>
-                    <p style="color:#555; margin-bottom: 20px;">Course: ${courseTitle}</p>
-                </div>
+<div style="margin-bottom: 20px;">
+            <button class="btn-action" style="background:#7f8c8d; margin-bottom: 15px;" onclick="cancelEvaluation()">← Return to List</button>
+            <h2>Evaluating: Prof. ${profName}</h2>
+            <p style="color:#555; margin-bottom: 20px;">Course: ${courseTitle}</p>
+        </div>
 
-                <div style="background: #fff; border-left: 5px solid #1e295d; padding: 20px; border-radius: 6px; margin-bottom: 30px; box-shadow: 0 2px 8px rgba(0,0,0,0.05);">
-                    <h4 style="color: #1e295d; margin-bottom: 8px; font-size: 15px;">Evaluation Instructions & Rating Scale</h4>
-                    <p style="font-size: 13.5px; color: #555; line-height: 1.5; margin-bottom: 12px;">
-                        Please read each statement carefully and evaluate your instructor objectively by selecting the rating that best corresponds to their performance this semester.
-                    </p>
-                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 10px; font-size: 13px; font-weight: 600; color: #333; background: #f8f9fa; padding: 12px; border-radius: 6px;">
-                        <div><span style="color:#1e295d; font-size:14px;">5</span> – Outstanding</div>
-                        <div><span style="color:#1e295d; font-size:14px;">4</span> – Very Satisfactory</div>
-                        <div><span style="color:#1e295d; font-size:14px;">3</span> – Satisfactory</div>
-                        <div><span style="color:#1e295d; font-size:14px;">2</span> – Fair</div>
-                        <div><span style="color:#1e295d; font-size:14px;">1</span> – Poor</div>
-                    </div>
-                </div>
+        <div style="background: #fff; border-left: 5px solid #1e295d; padding: 20px; border-radius: 6px; margin-bottom: 30px; box-shadow: 0 2px 8px rgba(0,0,0,0.05);">
+            <h4 style="color: #1e295d; margin-bottom: 8px; font-size: 15px;">Evaluation Instructions & Rating Scale</h4>
+            <p style="font-size: 13.5px; color: #555; line-height: 1.5; margin-bottom: 12px;">
+                Please read each statement carefully and evaluate your instructor objectively by selecting the rating that best corresponds to their performance this semester.
+            </p>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 10px; font-size: 13px; font-weight: 600; color: #333; background: #f8f9fa; padding: 12px; border-radius: 6px;">
+                <div><span style="color:#1e295d; font-size:14px;">5</span> – Outstanding</div>
+                <div><span style="color:#1e295d; font-size:14px;">4</span> – Very Satisfactory</div>
+                <div><span style="color:#1e295d; font-size:14px;">3</span> – Satisfactory</div>
+                <div><span style="color:#1e295d; font-size:14px;">2</span> – Fair</div>
+                <div><span style="color:#1e295d; font-size:14px;">1</span> – Poor</div>
+            </div>
+        </div>
 
-                <form id="evaluationSubmissionForm" onsubmit="submitEvaluationForm(event)">
-            `;
+        <form id="evaluationSubmissionForm" onsubmit="submitEvaluation(event, ${assignmentId})">
+            <div style="background: #1e295d; color: white; padding: 12px 20px; border-radius: 6px; font-weight: 700; margin-bottom: 20px; font-size: 16px; letter-spacing: 0.5px;">
+                FACULTY PERFORMANCE EVALUATION CRITERIA
+            </div>
+       
+    `;
+            // Sort questions into arrays cleanly
+           // Check how many questions you have available in console for debugging
+console.log("Total loaded questions:", evaluationQuestionsList.length);
 
-            // Separate the global questions list by category groups cleanly
-            const part1Questions = evaluationQuestionsList.filter(q => q.category.includes("Part I"));
-            const part2Questions = evaluationQuestionsList.filter(q => q.category.includes("Part II"));
+// Sort questions into arrays cleanly based on your database category strings
+const part1Questions = evaluationQuestionsList.filter(q => q.category && q.category.includes("Part I"));
+const part2Questions = evaluationQuestionsList.filter(q => q.category && q.category.includes("Part II"));
+const part3Questions = evaluationQuestionsList.filter(q => q.category && q.category.includes("Part III"));
+const part4Questions = evaluationQuestionsList.filter(q => q.category && q.category.includes("Part IV"));
 
-            // ==========================================
-            // RENDER PART I SECTION HEADER
-            // ==========================================
+            // Render Part I
+           evaluationQuestionsList.forEach(q => {
+    html += `
+        <div class="question-card" data-question-id="${q.question_id}">
+            <p style="font-size:15px; color:#2c3e50; font-weight: 500;">${q.question_text}</p>
+            <div class="rating-container">
+                ${[5,4,3,2,1].map(num => `
+                    <label class="rating-option">
+                        <input type="radio" name="question_${q.question_id}" value="${num}"> ${num}
+                    </label>
+                `).join('')}
+            </div>
+        </div>
+    `;
+});
+
+            // Render Part III & Action Buttons Block
             html += `
-                <div style="background: #1e295d; color: white; padding: 12px 20px; border-radius: 6px; font-weight: 700; margin-bottom: 20px; font-size: 16px; letter-spacing: 0.5px;">
-                    PART I: NON-INSTRUCTIONAL COMPONENT (Faculty Customary Practices)
-                </div>
+                 <div style="background: #1e295d; color: white; padding: 12px 20px; border-radius: 6px; font-weight: 700; margin-top: 35px; margin-bottom: 20px; font-size: 16px; letter-spacing: 0.5px;">
+            PART III: QUALITATIVE ASSESSMENT
+        </div>
+        <div class="question-card">
+            <p><strong>Core Commentary Feedback (Optional)</strong></p>
+            <textarea id="evalComment" rows="4" style="width:100%; margin-top:10px; padding:10px; border-radius:6px; border:1px solid #ccc; font-size:14px; resize: vertical;" placeholder="Provide comments or constructive suggestions..."></textarea>
+        </div>
+        
+        <div class="form-actions" style="margin-top: 25px; margin-bottom: 60px; display: flex; align-items: center;">
+            <button type="button" onclick="saveEvaluationDraft(${assignmentId})" style="background: #64748b; color: white; border: none; padding: 14px 28px; border-radius: 6px; font-weight: 600; cursor: pointer; margin-right: 12px; font-size:15px;">
+                💾 Save Draft
+            </button>
+            <button type="submit" class="btn-submit" style="width: auto; padding: 14px 32px; background: #1e295d; color: white; border: none; border-radius: 6px; font-weight: 600; cursor: pointer; font-size: 15px;">Submit Evaluation Securely</button>
+        </div>
+    </form>
             `;
             
-            part1Questions.forEach(q => {
-                html += `
-                    <div class="question-card">
-                        <p style="font-size:15px; color:#2c3e50; font-weight: 500;">${q.question_text}</p>
-                        <div class="rating-container">
-                            ${[5,4,3,2,1].map(num => `
-                                <label class="rating-option">
-                                    <input type="radio" name="question_${q.question_id}" value="${num}" required> ${num}
-                                </label>
-                            `).join('')}
-                        </div>
-                    </div>
-                `;
-            });
-
-            // ==========================================
-            // RENDER PART II SECTION HEADER
-            // ==========================================
-            html += `
-                <div style="background: #1e295d; color: white; padding: 12px 20px; border-radius: 6px; font-weight: 700; margin-top: 35px; margin-bottom: 20px; font-size: 16px; letter-spacing: 0.5px;">
-                    PART II: INSTRUCTIONAL COMPONENT (Teaching Efficiency & Methodology)
-                </div>
-            `;
-
-            part2Questions.forEach(q => {
-                html += `
-                    <div class="question-card">
-                        <p style="font-size:15px; color:#2c3e50; font-weight: 500;">${q.question_text}</p>
-                        <div class="rating-container">
-                            ${[5,4,3,2,1].map(num => `
-                                <label class="rating-option">
-                                    <input type="radio" name="question_${q.question_id}" value="${num}" required> ${num}
-                                </label>
-                            `).join('')}
-                        </div>
-                    </div>
-                `;
-            });
-
-            // Add the final textual comments field at the bottom baseline
-           html += `
-                <div style="background: #1e295d; color: white; padding: 12px 20px; border-radius: 6px; font-weight: 700; margin-top: 35px; margin-bottom: 20px; font-size: 16px; letter-spacing: 0.5px;">
-                    PART III: QUALITATIVE ASSESSMENT
-                </div>
-                <div class="question-card">
-                    <p><strong>Core Commentary Feedback (Optional)</strong></p>
-                    <textarea id="evalComment" rows="4" style="width:100%; margin-top:10px; padding:10px; border-radius:6px; border:1px solid #ccc; font-size:14px; resize: vertical;" placeholder="Provide comments or constructive suggestions for structural development..."></textarea>
-                </div>
-                <button type="submit" class="btn-submit" style="margin-top: 15px; margin-bottom: 50px;">Submit Evaluation Securely</button>
-                </form>
-            `;
             container.innerHTML = html;
             
-            // ADD this simple line right here to engage the navigation trackers:
-            resetNavigationTrackers(); 
+            // Reinitialize saved state strings directly 
+            loadEvaluationDraft(assignmentId);
+            resetNavigationTrackers();
         }
 
-        function cancelEvaluation() {
-            const container = document.getElementById('studentMainContent');
-            container.innerHTML = `
-                <h3>Your Assigned Professors to Evaluate</h3>
-                <table class="eval-table">
-                    <thead>
-                        <tr>
-                            <th>Subject Code</th>
-                            <th>Course Title</th>
-                            <th>Professor Name</th>
-                            <th>Status</th>
-                            <th>Action</th>
-                        </tr>
-                    </thead>
-                    <tbody id="evaluationListBody"></tbody>
-                </table>
-            `;
-            loadStudentEvaluations();
-        }
+       function cancelEvaluation() {
+    const container = document.getElementById('studentMainContent');
+    container.innerHTML = `
+        <h3>Your Assigned Professors to Evaluate</h3>
+        <table class="eval-table">
+            <thead>
+                <tr>
+                    <th>Subject Code</th>
+                    <th>Course Title</th>
+                    <th>Professor Name</th>
+                    <th>Status</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody id="evaluationListBody"></tbody>
+        </table>
+    `;
+    // This fetches the clean rows from Node.js and prints them into #evaluationListBody
+    loadStudentEvaluations();
+}
 
-        async function submitEvaluationForm(e) {
-            e.preventDefault();
-            const form = document.getElementById('evaluationSubmissionForm');
-            const ratings = [];
+        // Draft Management Core Logic 
+        function saveEvaluationDraft(assignmentId) {
+            const cardElements = document.querySelectorAll('.question-card');
+            let draftAnswers = {};
 
-            evaluationQuestionsList.forEach(q => {
-                const checkedRadio = form.querySelector(`input[name="question_${q.question_id}"]:checked`);
-                if(checkedRadio) {
-                    ratings.push({ question_id: q.question_id, rating: parseInt(checkedRadio.value) });
+            cardElements.forEach(card => {
+                const questionId = card.dataset.questionId;
+                if(questionId) {
+                    const selectedRadio = card.querySelector('input[type="radio"]:checked');
+                    if (selectedRadio) {
+                        draftAnswers[questionId] = selectedRadio.value;
+                    }
                 }
             });
 
-            const comments = document.getElementById('evalComment').value.trim();
+            const commentElement = document.getElementById('evalComment');
+            if (commentElement) {
+                draftAnswers['comment'] = commentElement.value;
+            }
 
-            try {
-                const res = await fetch('/api/student/submit-evaluation', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        student_id: currentStudentId,
-                        assignment_id: activeAssignmentId,
-                        ratings: ratings,
-                        comments: comments
-                    })
-                });
-
-                if(res.ok) {
-                    alert("Evaluation sent successfully!");
-                    cancelEvaluation();
-                }
-            } catch(err) { console.error(err); }
+            localStorage.setItem(`draft_eval_${assignmentId}`, JSON.stringify(draftAnswers));
+            showSuccessToast('Draft saved successfully! You can finish this later.');
         }
 
-        // --- FACULTY LAYOUT ENGINE ---
+        function loadEvaluationDraft(assignmentId) {
+            const savedDraft = localStorage.getItem(`draft_eval_${assignmentId}`);
+            if (!savedDraft) return;
+
+            try {
+                const draftAnswers = JSON.parse(savedDraft);
+                Object.keys(draftAnswers).forEach(key => {
+                    if (key === 'comment') {
+                        const commentBox = document.getElementById('evalComment');
+                        if (commentBox) commentBox.value = draftAnswers[key];
+                        return;
+                    }
+
+                    const radio = document.querySelector(`input[name="question_${key}"][value="${draftAnswers[key]}"]`);
+                    if (radio) radio.checked = true;
+                });
+            } catch (err) {
+                console.error('Unable to load saved draft.', err);
+            }
+        }
+
+       function loadStudentEvaluations() {
+    const tbody = document.getElementById('evaluationListBody');
+    if (!tbody) return;
+
+    // Show a clean loading feedback indicator inside the table skeleton body
+    tbody.innerHTML = `<tr><td colspan="5" style="text-align: center; color: #7f8c8d; padding: 20px;">🔄 Loading your assigned evaluations...</td></tr>`;
+
+    // Fetch the raw assignment records array from your Node.js backend system layer
+    fetch(`/api/student/${currentStudentId}/evaluations`)
+        .then(res => {
+            if (!res.ok) throw new Error('Network dashboard response status failed');
+            return res.json();
+        })
+        .then(data => {
+            tbody.innerHTML = ''; // Wipe out the loading placeholder row context
+
+            if (!data || data.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="5" style="text-align: center; color: #27ae60; font-weight: 600; padding: 25px;">🎉 Exceptional work! You have completed all assigned faculty evaluations.</td></tr>`;
+                return;
+            }
+
+            // Map and iterate through each assigned academic subject dynamically
+            data.forEach(item => {
+                const row = document.createElement('tr');
+                
+                // Read row structural parameters safely from both possible database properties
+                const assignmentId = item.assignment_id || item.id;
+                const code = item.course_code || item.subject_code || 'N/A';
+                const title = item.course_title || item.subject_title || 'N/A';
+                const prof = item.professor_name || item.prof_name || item.professor || 'N/A';
+                
+                // Determine completion state indicators cleanly from backend flags
+                const isCompleted = item.status === 'Completed' || item.is_completed == true || item.is_completed == 1;
+                
+                // Build interactive visual components matching evaluation requirements
+                const statusBadge = isCompleted 
+                    ? `<span style="background: #e8f5e9; color: #2e7d32; padding: 6px 12px; border-radius: 4px; font-size: 13px; font-weight: bold; display: inline-block;">✅ Done</span>`
+                    : `<span style="background: #fff9db; color: #f08c00; padding: 6px 12px; border-radius: 4px; font-size: 13px; font-weight: bold; display: inline-block;">⏳ Pending</span>`;
+
+                // If evaluation is finished, convert button to a disabled "Submitted" baseline status layout
+                const actionButton = isCompleted
+                    ? `<button class="btn-action" disabled style="background: #bdc3c7; color: #7f8c8d; cursor: not-allowed; box-shadow: none; transform: none;">Submitted</button>`
+                    : `<button class="btn-action" onclick="openEvaluationForm(${assignmentId}, '${prof.replace(/'/g, "\\'")}', '${title.replace(/'/g, "\\'")}')">Evaluate</button>`;
+
+                row.innerHTML = `
+                    <td style="padding: 12px;"><strong>${code}</strong></td>
+                    <td style="padding: 12px;">${title}</td>
+                    <td style="padding: 12px;">Prof. ${prof}</td>
+                    <td style="padding: 12px; text-align: center;">${statusBadge}</td>
+                    <td style="padding: 12px; text-align: center;">${actionButton}</td>
+                `;
+                tbody.appendChild(row);
+            });
+        })
+        .catch(err => {
+            console.error("Critical Runtime Error building structural student dashboard rows:", err);
+            tbody.innerHTML = `<tr><td colspan="5" style="text-align: center; color: #e74c3c; font-weight: 600; padding: 25px;">❌ Failed to populate data list. Please perform a hard refresh or check authorization headers.</td></tr>`;
+        });
+}
+
+     // Add 'e' or 'event' parameter here
+function submitEvaluation(event, assignmentId) {
+    // 1. CRITICAL FIX: Stop the form from submitting traditionally and reloading the page
+    if (event && typeof event.preventDefault === 'function') {
+        event.preventDefault();
+    }
+
+    // 2. Grab only cards that have an actual numeric question ID assigned to them
+    const realQuestionCards = Array.from(document.querySelectorAll('.question-card[data-question-id]'));
+    let answers = [];
+    let missingQuestions = [];
+    
+    realQuestionCards.forEach((card, index) => {
+        const questionId = card.dataset.questionId;
+        const selectedRadio = card.querySelector('input[type="radio"]:checked');
+        
+        if (!selectedRadio) {
+            missingQuestions.push({
+                DOMElement: card,
+                visibleIndex: index + 1 
+            });
+        } else {
+            answers.push({
+                question_id: parseInt(questionId),
+                rating: parseInt(selectedRadio.value)
+            });
+        }
+    });
+
+    // Clear old validation/navigation tracks 
+    const allFormCards = document.querySelectorAll('.question-card');
+    allFormCards.forEach(c => {
+        c.style.borderLeft = "none";
+        c.style.background = "white";
+    });
+
+    // If any real frontend questions are missing, stop immediately
+    if (missingQuestions.length > 0) {
+        const firstMissing = missingQuestions[0];
+        
+        firstMissing.DOMElement.style.borderLeft = '6px solid #ef4444'; 
+        firstMissing.DOMElement.style.background = '#fef2f2';
+        firstMissing.DOMElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+        const globalCardsList = Array.from(document.querySelectorAll('#evaluationSubmissionForm .question-card'));
+        activeQuestionIndex = globalCardsList.indexOf(firstMissing.DOMElement);
+
+        alert(`❌ Evaluation Incomplete!\n\nYou missed question(s). Please check Question #${firstMissing.visibleIndex} and try again.`);
+        return; 
+    }
+
+    const commentElement = document.getElementById('evalComment');
+    const qualitativeComment = commentElement ? commentElement.value.trim() : "";
+
+    const payload = {
+        student_id: currentStudentId,
+        assignment_id: assignmentId,
+        ratings: answers,
+        comments: qualitativeComment
+    };
+
+    // Send data securely to the backend API layer
+   // Send data securely to your Node.js backend API layer
+   // Send data securely to your Node.js backend API layer
+    fetch('/api/student/submit-evaluation', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+    })
+    .then(res => res.json())
+    .then(data => {
+        // FIXED LOGIC: If the server says "success" OR the message text says it was secure
+        if (data.success === true || (data.message && data.message.toLowerCase().includes('securely'))) {
+            localStorage.removeItem(`draft_eval_${assignmentId}`);
+            showSuccessToast('Evaluation submitted successfully!');
+        } else {
+            // This will now only trigger on genuine backend validation failures
+            alert("⚠️ Submission Rejected by Server:\n\n" + data.message + "\n\nYour selected answers have been preserved on screen safely.");
+        }
+    })
+    .catch(err => {
+        console.error("Database Runtime Submission Error:", err);
+        alert("A network error occurred. Your answers have been preserved on screen safely.");
+    });
+}
+        // Custom Notification Engine Replacement 
+       // Custom Notification Engine Replacement 
+function showSuccessToast(message) {
+    const toast = document.createElement('div');
+    toast.className = 'custom-toast';
+    toast.innerHTML = `<span>🎉</span> <span>${message}</span>`;
+    
+    document.body.appendChild(toast);
+    
+    setTimeout(() => {
+        toast.style.opacity = '0';
+        toast.style.transition = 'opacity 0.5s ease';
+        setTimeout(() => {
+            toast.remove();
+            
+            // FIXED: Just call cancelEvaluation(). It already builds the skeleton 
+            // and naturally triggers loadStudentEvaluations() safely internally!
+            cancelEvaluation(); 
+        }, 500);
+    }, 2000);
+}
+        // --- FACULTY CORE LOGIC ---
         async function loadFacultyPerformance(facultyId) {
             try {
                 const statsRes = await fetch(`/api/faculty/${facultyId}/performance`);
@@ -631,7 +941,7 @@
             } catch(e) { console.error(e); }
         }
 
-        // --- ADMIN LAYOUT ENGINE ---
+        // --- ADMIN STATISTICS INTERACTION ---
         async function loadAdminStatistics() {
             try {
                 const res = await fetch('/api/admin/overall-stats');
@@ -642,7 +952,145 @@
             } catch(e) { console.error(e); }
         }
 
-        // --- LOGOUT RE-ENTRY CONTROLLER ---
+        async function loadAdminProfessors() {
+            const select = document.getElementById('adminProfessorSelect');
+            if (!select) return;
+
+            try {
+                const res = await fetch('/api/admin/professors');
+                const professors = await res.json();
+
+                select.innerHTML = '<option value="">Select professor</option>';
+                professors.forEach(professor => {
+                    const option = document.createElement('option');
+                    option.value = professor.user_id;
+                    option.textContent = `${professor.professor_name} (${professor.school_id})`;
+                    select.appendChild(option);
+                });
+
+                if (professors.length > 0) {
+                    select.value = professors[0].user_id;
+                    loadAdminProfessorStatistics(select.value);
+                }
+            } catch (e) {
+                console.error(e);
+                select.innerHTML = '<option value="">Unable to load professors</option>';
+            }
+        }
+
+        function refreshSelectedProfessor() {
+            const select = document.getElementById('adminProfessorSelect');
+            if (select && select.value) loadAdminProfessorStatistics(select.value);
+        }
+
+        async function loadAdminProfessorStatistics(facultyId) {
+            const container = document.getElementById('adminProfessorContent');
+            if (!container) return;
+
+            if (!facultyId) {
+                container.innerHTML = '<p style="color:#657083;">Choose a professor to view evaluation statistics, course results, category averages, and student comments.</p>';
+                return;
+            }
+
+            container.innerHTML = '<p style="color:#657083;">Loading professor statistics...</p>';
+
+            try {
+                const res = await fetch(`/api/admin/professors/${facultyId}/statistics`);
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.message || 'Unable to load professor statistics.');
+
+                const summary = data.summary || {};
+                const courses = data.courses || [];
+                const categories = data.categories || [];
+                const comments = data.comments || [];
+                const average = summary.average_rating ? Number(summary.average_rating).toFixed(2) : 'N/A';
+                const strongest = categories
+                    .filter(item => item.average_rating)
+                    .sort((a, b) => b.average_rating - a.average_rating)[0];
+                const attention = categories
+                    .filter(item => item.average_rating)
+                    .sort((a, b) => a.average_rating - b.average_rating)[0];
+
+                container.innerHTML = `
+                    <h3 style="color:#1e295d;">Prof. ${summary.professor_name}</h3>
+                    <p style="color:#657083; margin-top:4px;">${summary.school_id || ''}</p>
+
+                    <div class="mini-stat-grid">
+                        <div class="mini-stat"><p>Assigned Classes</p><strong>${summary.total_classes || 0}</strong></div>
+                        <div class="mini-stat"><p>Assigned Evaluations</p><strong>${summary.assigned_students || 0}</strong></div>
+                        <div class="mini-stat"><p>Completed Evaluations</p><strong>${summary.completed_evaluations || 0}</strong></div>
+                        <div class="mini-stat"><p>Completion Rate</p><strong>${summary.completion_rate || '0.00%'}</strong></div>
+                        <div class="mini-stat"><p>Overall Average</p><strong>${average}</strong></div>
+                        <div class="mini-stat"><p>Total Rating Answers</p><strong>${summary.total_rating_answers || 0}</strong></div>
+                    </div>
+
+                    <div class="admin-split">
+                        <div>
+                            <h3>Course Statistics</h3>
+                            <table class="eval-table">
+                                <thead>
+                                    <tr>
+                                        <th>Course</th>
+                                        <th>Completed</th>
+                                        <th>Average</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${courses.map(course => `
+                                        <tr>
+                                            <td><strong>${course.course_code}</strong><br><small>${course.course_title}</small></td>
+                                            <td>${course.completed_evaluations || 0} / ${course.assigned_students || 0}</td>
+                                            <td>${course.average_rating ? Number(course.average_rating).toFixed(2) : 'N/A'}</td>
+                                        </tr>
+                                    `).join('') || '<tr><td colspan="3">No course assignments found.</td></tr>'}
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <div>
+                            <h3>Category Averages</h3>
+                            <table class="eval-table">
+                                <thead>
+                                    <tr>
+                                        <th>Category</th>
+                                        <th>Average</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${categories.map(category => `
+                                        <tr>
+                                            <td>${category.category}</td>
+                                            <td>${category.average_rating ? Number(category.average_rating).toFixed(2) : 'N/A'}</td>
+                                        </tr>
+                                    `).join('') || '<tr><td colspan="2">No category ratings submitted yet.</td></tr>'}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div class="admin-panel" style="box-shadow:none; border:1px solid #edf0f5;">
+                        <h3>Quick Insights</h3>
+                        <p style="margin-top:8px; color:#374151;">Strongest area: <strong>${strongest ? strongest.category + ' (' + Number(strongest.average_rating).toFixed(2) + ')' : 'No ratings yet'}</strong></p>
+                        <p style="margin-top:6px; color:#374151;">Needs attention: <strong>${attention ? attention.category + ' (' + Number(attention.average_rating).toFixed(2) + ')' : 'No ratings yet'}</strong></p>
+                    </div>
+
+                    <h3 style="margin-top:22px;">Student Comments</h3>
+                    <div style="margin-top:10px;">
+                        ${comments.map(item => `
+                            <div class="comment-item">
+                                <p>"${item.comment}"</p>
+                                <small style="color:#7f8c8d;">Course: ${item.course_code}</small>
+                            </div>
+                        `).join('') || '<p style="color:#7f8c8d; font-style:italic;">No comments submitted for this professor yet.</p>'}
+                    </div>
+                `;
+            } catch (e) {
+                console.error(e);
+                container.innerHTML = '<p style="color:#c0392b; font-weight:700;">Unable to load professor statistics.</p>';
+            }
+        }
+
+        // --- SESSION TEARDOWN DESTROYER ---
         function logout() {
             sessionStorage.clear();
             window.location.href = '/';
